@@ -1,21 +1,22 @@
-# AnyKernel2 Ramdisk Mod Script
+# AnyKernel2 Ramdisk Mod Script 
 # osm0sis @ xda-developers
+# Mod 4 LG G3 By Eliminater74
 
 ## AnyKernel setup
 # EDIFY properties
-kernel.string=DirtyV by bsmitty83 @ xda-developers
+kernel.string=Nebula Kernel Rev12.2_LP By Eliminater74
 do.devicecheck=1
 do.initd=1
 do.modules=0
 do.cleanup=1
-device.name1=maguro
-device.name2=toro
-device.name3=toroplus
-device.name4=
-device.name5=
+device.name1=d851
+device.name2=LG-D851
+device.name3=LG
+device.name4=LGE
+device.name5=LG G3
 
 # shell variables
-block=/dev/block/platform/omap/omap_hsmmc.0/by-name/boot;
+block=/dev/block/platform/msm_sdcc.1/by-name/boot;
 
 ## end setup
 
@@ -95,6 +96,10 @@ write_boot() {
       ui_print " "; ui_print "User script execution failed. Aborting..."; exit 1;
     fi;
   fi;
+  
+# Bump Image #
+  dd if=$bin/bump bs=1 count=32 >> /tmp/anykernel/boot-new.img;
+  dd if=/dev/zero of=$block;
   dd if=/tmp/anykernel/boot-new.img of=$block;
 }
 
@@ -213,32 +218,80 @@ dump_boot;
 
 # begin ramdisk changes
 
-# init.rc
-backup_file init.rc;
-replace_string init.rc "cpuctl cpu,timer_slack" "mount cgroup none /dev/cpuctl cpu" "mount cgroup none /dev/cpuctl cpu,timer_slack";
-append_file init.rc "run-parts" init;
+## AnyKernel permissions
+# set permissions for included files
+chmod -R 755 $ramdisk
 
-# init.tuna.rc
-backup_file init.tuna.rc;
-insert_line init.tuna.rc "nodiratime barrier=0" after "mount_all /fstab.tuna" "\tmount ext4 /dev/block/platform/omap/omap_hsmmc.0/by-name/userdata /data remount nosuid nodev noatime nodiratime barrier=0";
-append_file init.tuna.rc "dvbootscript" init.tuna;
+# set permissions for Synapse
+chmod -R 755 $ramdisk
+chmod 0755 /system/sbin/uci
+chmod 644 $ramdisk/res/synapse/*
+chmod -R 755 $ramdisk/res/synapse/actions
+chmod -R 777 $ramdisk/res/synapse/files
+
+## AnyKernel install
+dump_boot;
+
+## begin ramdisk changes ##
+
+# insert initd scripts
+cp -fp $patch/init.d/* $initd
+chmod -R 766 $initd
+
+# mpdecsion binary
+#mv $bindir/mpdecision-rm $bindir/mpdecision
+
+# adb secure
+backup_file default.prop;
+replace_string default.prop "ro.adb.secure=0" "ro.adb.secure=1" "ro.adb.secure=0";
+replace_string default.prop "ro.secure=0" "ro.secure=1" "ro.secure=0";
+
+# init.g3.rc
+backup_file init.g3.rc;
+append_file init.g3.rc "nebula-post_boot" init.g3.patch;
+append_file init.g3.rc "/sbin/uci" init.g3;
+
+# Disable QCOM Thermal Driver
+insert_line init.g3.rc "#Disable QCOM Thermal" after "service thermal-engine /system/bin/thermal-engine" "   #Disable QCOM Thermal\n   disabled\n"
+
+
+# init.rc ##
+#backup_file init.rc
+#replace_string init.rc "setprop selinux.reload_policy 1" "setprop selinux.reload_policy 1" "setprop selinux.reload_policy 0";
+#replace_string init.rc "mkdir /data/security 0711 system system" "mkdir /data/security 0711 system system" "mkdir /data/security 0755 system system";
+#replace_string init.rc "mkdir /data/backup 0700 system system" "mkdir /data/backup 0700 system system" "mkdir /data/backup 0755 system system";
+#replace_string init.rc "mkdir /data/media 0770 media_rw media_rw" "mkdir /data/media 0770 media_rw media_rw" "mkdir /data/media 0755 media_rw media_rw";
+#replace_string init.rc "mkdir /data/user 0711 system system" "mkdir /data/user 0711 system system" "mkdir /data/user 0755 system system";
 
 # init.superuser.rc
-if [ -f init.superuser.rc ]; then
-  backup_file init.superuser.rc;
-  replace_string init.superuser.rc "Superuser su_daemon" "# su daemon" "\n# Superuser su_daemon";
-  prepend_file init.superuser.rc "SuperSU daemonsu" init.superuser;
-else
-  replace_file init.superuser.rc 750 init.superuser.rc;
-  insert_line init.rc "init.superuser.rc" after "on post-fs-data" "    import /init.superuser.rc";
-fi;
+#if [ -f init.superuser.rc ]; then
+#  backup_file init.superuser.rc;
+#  replace_string init.superuser.rc "Superuser su_daemon" "# su daemon" "\n# Superuser su_daemon";
+#  prepend_file init.superuser.rc "SuperSU daemonsu" init.superuser;
+#else
+#  replace_file init.superuser.rc 750 init.superuser.rc;
+#  insert_line init.rc "init.superuser.rc" after "on post-fs-data" "    import /init.superuser.rc\n";
+#fi;
 
-# fstab.tuna
-backup_file fstab.tuna;
-patch_fstab fstab.tuna /system ext4 options "nodiratime,barrier=0" "nodev,noatime,nodiratime,barrier=0,data=writeback,noauto_da_alloc,discard";
-patch_fstab fstab.tuna /cache ext4 options "barrier=0,nomblk_io_submit" "nosuid,nodev,noatime,nodiratime,errors=panic,barrier=0,nomblk_io_submit,data=writeback,noauto_da_alloc";
-patch_fstab fstab.tuna /data ext4 options "nomblk_io_submit,data=writeback" "nosuid,nodev,noatime,errors=panic,nomblk_io_submit,data=writeback,noauto_da_alloc";
-append_file fstab.tuna "usbdisk" fstab;
+# add frandom compatibility
+backup_file ueventd.rc;
+insert_line ueventd.rc "frandom" after "urandom" "/dev/frandom              0666   root       root\n";
+insert_line ueventd.rc "erandom" after "urandom" "/dev/erandom              0666   root       root\n";
+
+backup_file file_contexts;
+insert_line file_contexts "frandom" after "urandom" "/dev/frandom				u:object_r:frandom_device:s0\n";
+insert_line file_contexts "erandom" after "urandom" "/dev/erandom				u:object_r:erandom_device:s0\n";
+
+# Add F2FS Support for /data and /cache since its can be used on ANY rom
+#backup_file fstab.g3
+#replace_file fstab.g3 750 fstab.g3;
+
+# xPrivacy
+# Thanks to @Shadowghoster & @@laufersteppenwolf
+param=$(grep "xprivacy" service_contexts)
+if [ -z $param ]; then
+    echo -ne "xprivacy453                               u:object_r:system_server_service:s0\n" >> service_contexts
+fi
 
 # end ramdisk changes
 

@@ -1,6 +1,7 @@
 #!/sbin/sh
 # AnyKernel2 Backend
 # osm0sis @ xda-developers
+# Updated on 09/22/2015 By Eliminater74
 
 OUTFD=/proc/self/fd/$2;
 ZIP="$3";
@@ -59,9 +60,7 @@ ui_print "-     UKM Synapse Scrits Included       -";
 ui_print "-----------------------------------------";
 
 ui_print "$(file_getprop /tmp/anykernel/anykernel.sh kernel.string)";
-ui_print " ";
-ui_print "AnyKernel2 by osm0sis @ xda-developers";
-ui_print " ";
+
 mount -o ro /system;
 mount /data;
 
@@ -76,6 +75,7 @@ if [ "$(file_getprop /tmp/anykernel/anykernel.sh do.devicecheck)" == 1 ]; then
   done;
   ui_print " ";
   if [ "$match" != 1 ]; then
+    umount /system;
     abort "Unsupported device. Aborting...";
   fi;
 fi;

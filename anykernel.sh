@@ -8,8 +8,8 @@ kernel.string=Nebula Kernel Rev12.2_LP By Eliminater74
 do.devicecheck=1
 do.initd=1
 do.modules=0
-do.cleanup=1
 device.name1=d851
+device.name2=LG-d851
 device.name2=LG-D851
 device.name3=LG
 device.name4=LGE
@@ -209,8 +209,8 @@ patch_fstab() {
 
 ## AnyKernel permissions
 # set permissions for included files
-chmod -R 755 $ramdisk
-chmod 644 $ramdisk/sbin/media_profiles.xml
+#chmod -R 755 $ramdisk
+# chmod 644 $ramdisk/sbin/media_profiles.xml
 
 
 ## AnyKernel install

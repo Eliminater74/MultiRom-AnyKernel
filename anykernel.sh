@@ -1,16 +1,16 @@
-# AnyKernel2 Ramdisk Mod Script 
+# AnyKernel2 Ramdisk Mod Script
 # osm0sis @ xda-developers
 # Mod 4 LG G3 By Eliminater74
 
 ## AnyKernel setup
 # EDIFY properties
-kernel.string=Nebula Kernel Rev12.2_LP By Eliminater74
+kernel.string=MultiRom V33 Modified TWRP Recovery V3.0 Ported By @Eliminater74
 do.devicecheck=1
 do.initd=1
 do.modules=0
-device.name1=d851
-device.name2=LG-d851
-device.name2=LG-D851
+do.cleanup=1
+device.name1=d850
+device.name2=LG-d850
 device.name3=LG
 device.name4=LGE
 device.name5=LG G3
@@ -30,7 +30,7 @@ patch=/tmp/anykernel/patch;
 
 chmod -R 755 $bin;
 mkdir -p $ramdisk $split_img;
-
+cd $ramdisk;
 OUTFD=/proc/self/fd/$1;
 ui_print() { echo -e "ui_print $1\nui_print" > $OUTFD; }
 
@@ -105,6 +105,9 @@ write_boot() {
 
 # backup_file <file>
 backup_file() { cp $1 $1~; }
+
+# remove_file <file>
+remove_file() { rm -rf $1~; }
 
 # replace_string <file> <if search string> <original string> <replacement string>
 replace_string() {
@@ -212,86 +215,15 @@ patch_fstab() {
 #chmod -R 755 $ramdisk
 # chmod 644 $ramdisk/sbin/media_profiles.xml
 
-
-## AnyKernel install
-dump_boot;
-
-# begin ramdisk changes
-
-## AnyKernel permissions
-# set permissions for included files
-chmod -R 755 $ramdisk
-
 # set permissions for Synapse
 chmod -R 755 $ramdisk
-chmod 0755 /system/sbin/uci
-chmod 644 $ramdisk/res/synapse/*
-chmod -R 755 $ramdisk/res/synapse/actions
-chmod -R 777 $ramdisk/res/synapse/files
 
 ## AnyKernel install
 dump_boot;
 
 ## begin ramdisk changes ##
 
-# insert initd scripts
-cp -fp $patch/init.d/* $initd
-chmod -R 766 $initd
-
-# mpdecsion binary
-#mv $bindir/mpdecision-rm $bindir/mpdecision
-
-# adb secure
-backup_file default.prop;
-replace_string default.prop "ro.adb.secure=0" "ro.adb.secure=1" "ro.adb.secure=0";
-replace_string default.prop "ro.secure=0" "ro.secure=1" "ro.secure=0";
-
-# init.g3.rc
-backup_file init.g3.rc;
-append_file init.g3.rc "nebula-post_boot" init.g3.patch;
-append_file init.g3.rc "/sbin/uci" init.g3;
-
-# Disable QCOM Thermal Driver
-insert_line init.g3.rc "#Disable QCOM Thermal" after "service thermal-engine /system/bin/thermal-engine" "   #Disable QCOM Thermal\n   disabled\n"
-
-
-# init.rc ##
-#backup_file init.rc
-#replace_string init.rc "setprop selinux.reload_policy 1" "setprop selinux.reload_policy 1" "setprop selinux.reload_policy 0";
-#replace_string init.rc "mkdir /data/security 0711 system system" "mkdir /data/security 0711 system system" "mkdir /data/security 0755 system system";
-#replace_string init.rc "mkdir /data/backup 0700 system system" "mkdir /data/backup 0700 system system" "mkdir /data/backup 0755 system system";
-#replace_string init.rc "mkdir /data/media 0770 media_rw media_rw" "mkdir /data/media 0770 media_rw media_rw" "mkdir /data/media 0755 media_rw media_rw";
-#replace_string init.rc "mkdir /data/user 0711 system system" "mkdir /data/user 0711 system system" "mkdir /data/user 0755 system system";
-
-# init.superuser.rc
-#if [ -f init.superuser.rc ]; then
-#  backup_file init.superuser.rc;
-#  replace_string init.superuser.rc "Superuser su_daemon" "# su daemon" "\n# Superuser su_daemon";
-#  prepend_file init.superuser.rc "SuperSU daemonsu" init.superuser;
-#else
-#  replace_file init.superuser.rc 750 init.superuser.rc;
-#  insert_line init.rc "init.superuser.rc" after "on post-fs-data" "    import /init.superuser.rc\n";
-#fi;
-
-# add frandom compatibility
-backup_file ueventd.rc;
-insert_line ueventd.rc "frandom" after "urandom" "/dev/frandom              0666   root       root\n";
-insert_line ueventd.rc "erandom" after "urandom" "/dev/erandom              0666   root       root\n";
-
-backup_file file_contexts;
-insert_line file_contexts "frandom" after "urandom" "/dev/frandom				u:object_r:frandom_device:s0\n";
-insert_line file_contexts "erandom" after "urandom" "/dev/erandom				u:object_r:erandom_device:s0\n";
-
-# Add F2FS Support for /data and /cache since its can be used on ANY rom
-#backup_file fstab.g3
-#replace_file fstab.g3 750 fstab.g3;
-
-# xPrivacy
-# Thanks to @Shadowghoster & @@laufersteppenwolf
-param=$(grep "xprivacy" service_contexts)
-if [ -z $param ]; then
-    echo -ne "xprivacy453                               u:object_r:system_server_service:s0\n" >> service_contexts
-fi
+#### < MultiRom TWRP Flash, Dont need anything Here >
 
 # end ramdisk changes
 
